@@ -28,7 +28,17 @@ pub fn run(
         match text {
             "" => continue,
             ":quit" => return Ok(()),
-            ":help" => write!(output, "{HELP}")?,
+            ":help" => {
+                write!(output, "{HELP}")?;
+                writeln!(
+                    output,
+                    "Tuples: (), (x,), (x, y). Matrices: [x, y; z, 1]; vectors are rows or columns."
+                )?;
+                writeln!(
+                    output,
+                    "Arithmetic accepts polynomials only. Braces are reserved for future sets."
+                )?;
+            }
             ":reset" => {
                 ring = PolynomialRing::new(ring.order());
                 writeln!(output, "Session reset.")?;
@@ -64,8 +74,8 @@ pub fn run(
             text if text.starts_with(':') => {
                 writeln!(diagnostics, "error: unknown command '{text}'; use :help")?
             }
-            _ => match parser::evaluate(line.trim_end(), &mut ring) {
-                Ok(value) => writeln!(output, "{}", ring.format(&value))?,
+            _ => match parser::evaluate_value(line.trim_end(), &mut ring) {
+                Ok(value) => writeln!(output, "{}", value.format(&ring))?,
                 Err(err) => {
                     writeln!(diagnostics, "error: {err}")?;
                     writeln!(diagnostics, "{}", line.trim_end())?;

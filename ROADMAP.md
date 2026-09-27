@@ -62,13 +62,23 @@ The REPL can start with standard I/O and no additional dependencies.
 
 ## Milestone 2 — Multivariate division
 
+### Compound values foundation
+
+- [x] Ordered heterogeneous tuples, including empty, singleton, and nested tuples.
+- [x] Rectangular polynomial matrix literals and row/column vectors.
+- [x] Recursive formatting, type validation, and transactional variable registration.
+- [x] Preserve the polynomial API and add general value evaluation for the REPL.
+- [x] Parser and E2E coverage for literals, errors, recovery, and formatting round trips.
+
+### Division algorithm and interface
+
 - [ ] Monomial divisibility and exact quotients.
 - [ ] Division by an ordered list of polynomials.
 - [ ] Return all quotients and the remainder; reject zero divisors.
 - [ ] Verify `f = Σ(qᵢ*fᵢ) + r` and that no remainder monomial is divisible
   by any divisor's leading monomial.
 - [ ] Examples showing dependence on divisor order.
-- [ ] Expose the operation in the REPL with syntax defined during this milestone.
+- [ ] Add function calls and `div(f, [g1, g2])`, returning `([q1, q2], r)`.
 
 ## Milestone 3 — Gröbner bases
 
@@ -84,7 +94,7 @@ that is easy to follow.
 ## Later
 
 - Assignments and REPL improvements.
-- Matrices and exact linear algebra.
+- Matrix operations and exact linear algebra (literal representation is available).
 - Polynomial differentiation and evaluation.
 - Symbolic expressions and functions with a dedicated representation.
 - Plotting, separating exact computation from numerical evaluation for visualization.

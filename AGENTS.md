@@ -22,6 +22,11 @@ over premature optimization or generic algebra frameworks.
   Missing exponents are zero; omit trailing zeros from monomial representations.
 - Changing the monomial order or existing variable precedence resets the session.
 - Normalize polynomials: sorted terms, no duplicate monomials, no zero coefficients.
+- Interpreter values are polynomials, heterogeneous ordered tuples `(a, b)`, and
+  rectangular polynomial matrices `[a, b; c, d]`. Vectors are one-row or one-column
+  matrices. `(x)` groups; `(x,)` is a singleton tuple; braces are reserved for sets.
+- Collection literals do not imply collection arithmetic. Commit new variables only
+  after the entire expression and its required result type have been validated.
 
 ## Conventions and validation
 

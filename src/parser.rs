@@ -7,6 +7,7 @@ use num_traits::{One, Zero};
 
 use crate::Rational;
 use crate::polynomial::{Polynomial, PolynomialRing};
+use crate::value::{Matrix, Value};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error {
@@ -33,6 +34,10 @@ enum Kind {
     Caret,
     Open,
     Close,
+    Comma,
+    Semicolon,
+    OpenBracket,
+    CloseBracket,
     End,
 }
 
@@ -84,6 +89,10 @@ fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
             '^' => Kind::Caret,
             '(' => Kind::Open,
             ')' => Kind::Close,
+            ',' => Kind::Comma,
+            ';' => Kind::Semicolon,
+            '[' => Kind::OpenBracket,
+            ']' => Kind::CloseBracket,
             _ => {
                 return Err(error(column, format!("unexpected character '{ch}'")));
             }
@@ -103,20 +112,53 @@ fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
 enum Expr {
     Number(Rational),
     Variable(String),
-    Neg(Box<Expr>),
+    Unary(bool, Box<Expr>, usize),
+    Tuple(Vec<Expr>),
+    Matrix(Vec<Vec<(Expr, usize)>>),
     Binary(Kind, Box<Expr>, Box<Expr>, usize),
     Power(Box<Expr>, u32, usize),
 }
 
+fn polynomial(value: Value, column: usize) -> Result<Polynomial, Error> {
+    match value {
+        Value::Polynomial(value) => Ok(value),
+        Value::Tuple(_) => Err(error(column, "expected a polynomial, found a tuple")),
+        Value::Matrix(_) => Err(error(column, "expected a polynomial, found a matrix")),
+    }
+}
+
 impl Expr {
-    fn evaluate(self, ring: &mut PolynomialRing) -> Result<Polynomial, Error> {
-        Ok(match self {
+    fn evaluate(self, ring: &mut PolynomialRing) -> Result<Value, Error> {
+        let value = match self {
+            Self::Tuple(elements) => {
+                return elements
+                    .into_iter()
+                    .map(|e| e.evaluate(ring))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map(Value::Tuple);
+            }
+            Self::Matrix(rows) => {
+                let row_count = rows.len();
+                let columns = rows.first().map_or(0, Vec::len);
+                let mut entries = Vec::new();
+                for row in rows {
+                    for (entry, column) in row {
+                        entries.push(polynomial(entry.evaluate(ring)?, column)?);
+                    }
+                }
+                return Matrix::new(row_count, columns, entries)
+                    .map(Value::Matrix)
+                    .map_err(|message| error(1, message));
+            }
             Self::Number(value) => Polynomial::constant(value),
             Self::Variable(name) => ring.variable(&name),
-            Self::Neg(value) => value.evaluate(ring)?.negate(),
+            Self::Unary(negative, expression, column) => {
+                let value = polynomial(expression.evaluate(ring)?, column)?;
+                if negative { value.negate() } else { value }
+            }
             Self::Binary(op, left, right, column) => {
-                let left = left.evaluate(ring)?;
-                let right = right.evaluate(ring)?;
+                let left = polynomial(left.evaluate(ring)?, column)?;
+                let right = polynomial(right.evaluate(ring)?, column)?;
                 match op {
                     Kind::Plus => ring.add(&left, &right),
                     Kind::Minus => ring.subtract(&left, &right),
@@ -127,11 +169,12 @@ impl Expr {
                 }
             }
             Self::Power(base, exponent, column) => {
-                let base = base.evaluate(ring)?;
+                let base = polynomial(base.evaluate(ring)?, column)?;
                 ring.power(&base, exponent)
                     .map_err(|message| error(column, message))?
             }
-        })
+        };
+        Ok(Value::Polynomial(value))
     }
 }
 
@@ -156,6 +199,40 @@ impl Parser {
         let value = digits.parse().expect("lexer only emits decimal digits");
         self.next += 1;
         Ok(value)
+    }
+
+    fn matrix(&mut self, depth: usize) -> Result<Expr, Error> {
+        self.next += 1;
+        if self.current().kind == Kind::CloseBracket {
+            self.next += 1;
+            return Ok(Expr::Matrix(vec![]));
+        }
+        let mut rows: Vec<Vec<(Expr, usize)>> = Vec::new();
+        loop {
+            let row_column = self.current().column;
+            let mut row = Vec::new();
+            loop {
+                let column = self.current().column;
+                row.push((self.expression(0, depth + 1)?, column));
+                if self.current().kind != Kind::Comma {
+                    break;
+                }
+                self.next += 1;
+            }
+            if rows.first().is_some_and(|first| first.len() != row.len()) {
+                return Err(error(row_column, "matrix rows must have equal lengths"));
+            }
+            rows.push(row);
+            match self.current().kind {
+                Kind::Semicolon => self.next += 1,
+                Kind::CloseBracket => {
+                    self.next += 1;
+                    break;
+                }
+                _ => return Err(self.fail("expected ',', ';' or ']'")),
+            }
+        }
+        Ok(Expr::Matrix(rows))
     }
 
     fn expression(&mut self, minimum: u8, depth: usize) -> Result<Expr, Error> {
@@ -184,24 +261,43 @@ impl Parser {
             }
             Kind::Plus | Kind::Minus => {
                 let negative = self.current().kind == Kind::Minus;
+                let column = self.current().column;
                 self.next += 1;
                 let value = self.expression(3, depth + 1)?;
-                if negative {
-                    Expr::Neg(Box::new(value))
-                } else {
-                    value
-                }
+                Expr::Unary(negative, Box::new(value), column)
             }
             Kind::Open => {
                 self.next += 1;
-                let value = self.expression(0, depth + 1)?;
-                if self.current().kind != Kind::Close {
-                    return Err(self.fail("expected ')'"));
+                if self.current().kind == Kind::Close {
+                    self.next += 1;
+                    Expr::Tuple(vec![])
+                } else {
+                    let first = self.expression(0, depth + 1)?;
+                    if self.current().kind == Kind::Close {
+                        self.next += 1;
+                        first
+                    } else {
+                        if self.current().kind != Kind::Comma {
+                            return Err(self.fail("expected ')' or ','"));
+                        }
+                        let mut elements = vec![first];
+                        while self.current().kind == Kind::Comma {
+                            self.next += 1;
+                            if self.current().kind == Kind::Close {
+                                break;
+                            }
+                            elements.push(self.expression(0, depth + 1)?);
+                        }
+                        if self.current().kind != Kind::Close {
+                            return Err(self.fail("expected ')' or ','"));
+                        }
+                        self.next += 1;
+                        Expr::Tuple(elements)
+                    }
                 }
-                self.next += 1;
-                value
             }
-            _ => return Err(self.fail("expected a number, variable, unary sign, or '('")),
+            Kind::OpenBracket => self.matrix(depth)?,
+            _ => return Err(self.fail("expected a number, variable, unary sign, '(' or '['")),
         };
         loop {
             let op = self.current().kind.clone();
@@ -236,8 +332,7 @@ impl Parser {
     }
 }
 
-/// Parse the entire input before evaluating it. Slash is only a fraction separator.
-pub fn evaluate(input: &str, ring: &mut PolynomialRing) -> Result<Polynomial, Error> {
+fn parse(input: &str) -> Result<Expr, Error> {
     let mut parser = Parser {
         tokens: tokenize(input)?,
         next: 0,
@@ -248,9 +343,24 @@ pub fn evaluate(input: &str, ring: &mut PolynomialRing) -> Result<Polynomial, Er
             parser.fail("unexpected token; use explicit '*' and '/' only in rational literals")
         );
     }
-    // Commit new variables only after the entire expression succeeds.
+    Ok(expression)
+}
+
+/// Evaluate any value, committing new variables only after complete success.
+pub fn evaluate_value(input: &str, ring: &mut PolynomialRing) -> Result<Value, Error> {
+    let expression = parse(input)?;
     let mut candidate = ring.clone();
     let value = expression.evaluate(&mut candidate)?;
+    *ring = candidate;
+    Ok(value)
+}
+
+/// Evaluate only a polynomial, rejecting compound results without changing the ring.
+pub fn evaluate(input: &str, ring: &mut PolynomialRing) -> Result<Polynomial, Error> {
+    let expression = parse(input)?;
+    let mut candidate = ring.clone();
+    let column = input.chars().position(|c| !c.is_whitespace()).unwrap_or(0) + 1;
+    let value = polynomial(expression.evaluate(&mut candidate)?, column)?;
     *ring = candidate;
     Ok(value)
 }

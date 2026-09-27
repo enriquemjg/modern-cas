@@ -117,3 +117,26 @@ fn failed_expressions_and_commands_preserve_variables() {
     assert_eq!(err.matches("error:").count(), 5);
     assert!(err.contains("monomial exponent overflow"));
 }
+
+#[test]
+fn compound_literals_through_the_binary() {
+    let (out, err) = session(
+        "()\n(x)\n(x,)\n(x,y,z,)\n[]\n[x]\n[x,y]\n[x;y]\n[x+x,(x+1)^2;0,1]\n([1,0],1)\n(x,(y,z))\n:vars\n",
+    );
+    assert_eq!(
+        out,
+        "()\nx\n(x,)\n(x, y, z)\n[]\n[x]\n[x, y]\n[x; y]\n[2*x, x^2 + 2*x + 1; 0, 1]\n([1, 0], 1)\n(x, (y, z))\nx > y > z\n"
+    );
+    assert_eq!(err, "");
+}
+
+#[test]
+fn compound_errors_recover_without_registering_variables() {
+    let (out, err) = session(
+        "x\n[new,1;2]\n[new,(y,)]\n+[new]\n(new,)+1\n[new,]\n[;]\n{new}\n:vars\n([x],x+x)\n",
+    );
+    assert_eq!(out, "x\nx\n([x], 2*x)\n");
+    assert_eq!(err.matches("error:").count(), 7);
+    assert!(err.contains("matrix rows must have equal lengths"));
+    assert!(err.contains("expected a polynomial"));
+}

@@ -58,6 +58,39 @@ EOF and `:quit` exit successfully even after expression errors; an I/O failure
 produces a nonzero exit code. E2E tests launch the actual executable and verify
 complete sessions.
 
+## Compound values
+
+Every expression returns one value: a polynomial, tuple, or polynomial matrix.
+
+| Syntax | Meaning |
+|---|---|
+| `(x)` | Grouping, equivalent to `x` |
+| `()` | Empty tuple |
+| `(x,)` | Singleton tuple |
+| `(x, y, z)` | Ordered, possibly heterogeneous tuple |
+| `[x, y]` | Row vector (1 by 2 matrix) |
+| `[x; y]` | Column vector (2 by 1 matrix) |
+| `[a, b; c, d]` | Rectangular matrix |
+| `[x]` | 1 by 1 matrix, distinct from scalar `x` |
+| `[]` | Empty 0 by 0 matrix |
+| `([1, 0], 1)` | Tuple containing a vector and a polynomial |
+
+Tuples preserve order and repetition, allow nesting, and accept a trailing comma.
+Matrix entries must evaluate to polynomials. Commas separate columns and
+semicolons separate rows; rows must have equal lengths. Spaces are not separators,
+and empty rows, trailing separators, and block concatenation are not supported.
+Entries simplify automatically: `[x+x, (x+1)^2]` becomes `[2*x, x^2 + 2*x + 1]`.
+
+Arithmetic, including unary signs, currently accepts polynomials only. Collection
+arithmetic, indexing, assignments, destructuring, and function calls are future
+features. Braces are reserved for sets. Polynomial division is not implemented yet;
+its planned interface is `div(f, [g1, g2])`, returning `([q1, q2], r)`.
+
+Elements are evaluated left to right, with matrices traversed by rows. Failed
+entries or type checks leave the entire session context unchanged. Parser limits
+also apply to collections. Library callers can use `parser::evaluate_value` for
+all values or `parser::evaluate` to require a polynomial transactionally.
+
 ## Core design decisions
 
 - Coefficients in ℚ backed by arbitrary-precision integers.
