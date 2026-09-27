@@ -1,8 +1,9 @@
 # modern-cas
 
 A small Computer Algebra System in Rust, focused on algorithms from
-*Ideals, Varieties, and Algorithms*. We prioritize simple code, exact arithmetic,
-and recognizable algorithms over premature optimization.
+_Ideals, Varieties, and Algorithms_ by D. Cox, J. Little and D. O'Shea.
+We prioritize simple code, exact arithmetic, and recognizable algorithms
+over premature optimization.
 
 ## Status
 
@@ -62,18 +63,18 @@ complete sessions.
 
 Every expression returns one value: a polynomial, tuple, or polynomial matrix.
 
-| Syntax | Meaning |
-|---|---|
-| `(x)` | Grouping, equivalent to `x` |
-| `()` | Empty tuple |
-| `(x,)` | Singleton tuple |
-| `(x, y, z)` | Ordered, possibly heterogeneous tuple |
-| `[x, y]` | Row vector (1 by 2 matrix) |
-| `[x; y]` | Column vector (2 by 1 matrix) |
-| `[a, b; c, d]` | Rectangular matrix |
-| `[x]` | 1 by 1 matrix, distinct from scalar `x` |
-| `[]` | Empty 0 by 0 matrix |
-| `([1, 0], 1)` | Tuple containing a vector and a polynomial |
+| Syntax         | Meaning                                    |
+| -------------- | ------------------------------------------ |
+| `(x)`          | Grouping, equivalent to `x`                |
+| `()`           | Empty tuple                                |
+| `(x,)`         | Singleton tuple                            |
+| `(x, y, z)`    | Ordered, possibly heterogeneous tuple      |
+| `[x, y]`       | Row vector (1 by 2 matrix)                 |
+| `[x; y]`       | Column vector (2 by 1 matrix)              |
+| `[a, b; c, d]` | Rectangular matrix                         |
+| `[x]`          | 1 by 1 matrix, distinct from scalar `x`    |
+| `[]`           | Empty 0 by 0 matrix                        |
+| `([1, 0], 1)`  | Tuple containing a vector and a polynomial |
 
 Tuples preserve order and repetition, allow nesting, and accept a trailing comma.
 Matrix entries must evaluate to polynomials. Commas separate columns and
