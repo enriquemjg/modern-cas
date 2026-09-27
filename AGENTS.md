@@ -10,7 +10,7 @@ over premature optimization or generic algebra frameworks.
   `num-bigint::BigInt`).
 - First milestone: multivariate polynomials and a basic REPL supporting
   simplification, addition, subtraction, multiplication, and nonnegative integer
-  powers. Polynomial division and Gröbner bases are later milestones.
+  powers. Ordered multivariate division is implemented; Gröbner bases are next.
 - Keep the algebraic library independent of parsing and terminal I/O.
 - Deliver the REPL from the start and extend executable-level E2E tests alongside
   each feature. Support piped stdin without a TTY; show prompts only interactively,
@@ -27,6 +27,8 @@ over premature optimization or generic algebra frameworks.
   matrices. `(x)` groups; `(x,)` is a singleton tuple; braces are reserved for sets.
 - Collection literals do not imply collection arithmetic. Commit new variables only
   after the entire expression and its required result type have been validated.
+- `div(f, [g1, g2])` returns `([q1, q2], r)`. Accept row/column divisor vectors
+  and preserve their shape; reject zero divisors. Empty divisors return `([], f)`.
 
 ## Conventions and validation
 

@@ -140,3 +140,28 @@ fn compound_errors_recover_without_registering_variables() {
     assert!(err.contains("matrix rows must have equal lengths"));
     assert!(err.contains("expected a polynomial"));
 }
+
+#[test]
+fn division_returns_quotients_and_remainder() {
+    let (out, err) = session(
+        "div(x*y,[x*y-1,y-1])\ndiv(x*y,[y-1,x*y-1])\ndiv(x^2-1,[x-1])\ndiv(x*y,[y-1;x*y-1])\ndiv(x+1,[])\ndiv(0,[x,1])\ndiv(x+1,[2])\n(div(x,[x]),div(y,[]))\n:vars\n",
+    );
+    assert_eq!(
+        out,
+        "([1, 0], 1)\n([x, 0], x)\n([x + 1], 0)\n([x; 0], x)\n([], x + 1)\n([0, 0], 0)\n([1/2*x + 1/2], 0)\n(([1], 0), ([], y))\nx > y\n"
+    );
+    assert_eq!(err, "");
+}
+
+#[test]
+fn division_uses_active_order_and_recovers_from_errors() {
+    let (out, err) = session(
+        "div(x^2,[x-y^2])\n:order grlex\ndiv(x^2,[x-y^2])\n:order grevlex\ndiv(x^2,[x-y^2])\ndiv(new,[0])\ndiv(new,[x,x;x,x])\ndiv()\nfoo(new)\n:vars\ndiv(x,[x])\n",
+    );
+    assert_eq!(
+        out,
+        "([x + y^2], y^4)\nOrder: grlex. Session reset.\n([0], x^2)\nOrder: grevlex. Session reset.\n([0], x^2)\nx > y\n([1], 0)\n"
+    );
+    assert_eq!(err.matches("error:").count(), 4);
+    assert!(err.contains("divisor 1 is the zero polynomial"));
+}

@@ -9,7 +9,7 @@ and recognizable algorithms over premature optimization.
 A working REPL for multivariate polynomials over exact rationals, with a lexer and Pratt parser
 requiring no additional dependencies. Coefficients use
 `num-rational::BigRational` and `num-bigint::BigInt`. Expressions are expanded
-and normalized automatically; polynomial division is the next milestone.
+and normalized automatically. Ordered multivariate division is available through `div`.
 
 ```sh
 cargo run
@@ -82,9 +82,37 @@ and empty rows, trailing separators, and block concatenation are not supported.
 Entries simplify automatically: `[x+x, (x+1)^2]` becomes `[2*x, x^2 + 2*x + 1]`.
 
 Arithmetic, including unary signs, currently accepts polynomials only. Collection
-arithmetic, indexing, assignments, destructuring, and function calls are future
-features. Braces are reserved for sets. Polynomial division is not implemented yet;
-its planned interface is `div(f, [g1, g2])`, returning `([q1, q2], r)`.
+arithmetic, indexing, assignments, and destructuring are future features.
+Braces are reserved for sets. Named function calls currently support only `div`.
+
+## Polynomial division
+
+`div(f, [g1, g2])` returns `([q1, q2], r)` satisfying
+`f = q1*g1 + q2*g2 + r`. The algorithm uses the session's monomial order and
+the first applicable divisor at each step. No monomial of the remainder is
+divisible by a leading monomial of any divisor. Divisors need not form a Gröbner
+basis, and changing their order can change the remainder:
+
+```text
+cas> div(x*y, [x*y-1, y-1])
+([1, 0], 1)
+cas> div(x*y, [y-1, x*y-1])
+([x, 0], x)
+```
+
+The divisor argument must be a row or column vector of polynomials, or `[]`.
+The quotient vector preserves its shape and element order. `div(f, [])` returns
+`([], f)`. Zero divisors are rejected, including expressions that simplify to zero,
+even when the dividend is zero. Arithmetic overflow also produces an error.
+All failures leave the session unchanged.
+
+Calls take comma-separated arguments without a trailing comma. Their results can
+appear inside tuples, but polynomial operators do not accept the tuple returned by
+`div`. A bare name such as `div` remains a polynomial variable; only `div(...)`
+is a call. `/` remains restricted to rational literals.
+
+The core API is `PolynomialRing::divide(&dividend, &divisors)`, returning a
+`DivisionResult` with `quotients` and `remainder`, independently of REPL values.
 
 Elements are evaluated left to right, with matrices traversed by rows. Failed
 entries or type checks leave the entire session context unchanged. Parser limits
@@ -108,7 +136,7 @@ all values or `parser::evaluate` to require a polynomial transactionally.
 - Keep the algebraic core independent of the parser and I/O.
 
 See [ROADMAP.md](ROADMAP.md) for completed acceptance criteria and the next
-milestones: multivariate division and Gröbner bases.
+milestone: Gröbner bases.
 
 Dependency references: [num-bigint](https://docs.rs/num-bigint/),
 [num-rational](https://docs.rs/num-rational/),

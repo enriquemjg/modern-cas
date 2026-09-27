@@ -112,6 +112,7 @@ fn tokenize(input: &str) -> Result<Vec<Token>, Error> {
 enum Expr {
     Number(Rational),
     Variable(String),
+    Call(String, Vec<(Expr, usize)>, usize),
     Unary(bool, Box<Expr>, usize),
     Tuple(Vec<Expr>),
     Matrix(Vec<Vec<(Expr, usize)>>),
@@ -130,6 +131,48 @@ fn polynomial(value: Value, column: usize) -> Result<Polynomial, Error> {
 impl Expr {
     fn evaluate(self, ring: &mut PolynomialRing) -> Result<Value, Error> {
         let value = match self {
+            Self::Call(name, arguments, column) => {
+                if name != "div" {
+                    return Err(error(column, format!("unknown function '{name}'")));
+                }
+                if arguments.len() != 2 {
+                    return Err(error(
+                        column,
+                        "div expects two arguments: a polynomial and a divisor vector",
+                    ));
+                }
+                let mut arguments = arguments.into_iter();
+                let (dividend, dividend_column) = arguments.next().unwrap();
+                let dividend = polynomial(dividend.evaluate(ring)?, dividend_column)?;
+                let (divisors, divisor_column) = arguments.next().unwrap();
+                let Value::Matrix(divisors) = divisors.evaluate(ring)? else {
+                    return Err(error(
+                        divisor_column,
+                        "div expects a vector of polynomial divisors",
+                    ));
+                };
+                if divisors.rows() > 1 && divisors.columns() > 1 {
+                    return Err(error(
+                        divisor_column,
+                        "div expects a row or column vector, not a matrix",
+                    ));
+                }
+                if let Some(index) = divisors.entries().iter().position(Polynomial::is_zero) {
+                    return Err(error(
+                        divisor_column,
+                        format!("divisor {} is the zero polynomial", index + 1),
+                    ));
+                }
+                let result = ring
+                    .divide(&dividend, divisors.entries())
+                    .map_err(|message| error(column, message))?;
+                let quotients = Matrix::new(divisors.rows(), divisors.columns(), result.quotients)
+                    .map_err(|message| error(column, message))?;
+                return Ok(Value::Tuple(vec![
+                    Value::Matrix(quotients),
+                    Value::Polynomial(result.remainder),
+                ]));
+            }
             Self::Tuple(elements) => {
                 return elements
                     .into_iter()
@@ -256,8 +299,29 @@ impl Parser {
                 Expr::Number(Rational::new(numerator, denominator))
             }
             Kind::Identifier(name) => {
+                let column = self.current().column;
                 self.next += 1;
-                Expr::Variable(name)
+                if self.current().kind == Kind::Open {
+                    self.next += 1;
+                    let mut arguments = Vec::new();
+                    if self.current().kind != Kind::Close {
+                        loop {
+                            let argument_column = self.current().column;
+                            arguments.push((self.expression(0, depth + 1)?, argument_column));
+                            if self.current().kind != Kind::Comma {
+                                break;
+                            }
+                            self.next += 1;
+                        }
+                    }
+                    if self.current().kind != Kind::Close {
+                        return Err(self.fail("expected ')' or ',' in function call"));
+                    }
+                    self.next += 1;
+                    Expr::Call(name, arguments, column)
+                } else {
+                    Expr::Variable(name)
+                }
             }
             Kind::Plus | Kind::Minus => {
                 let negative = self.current().kind == Kind::Minus;

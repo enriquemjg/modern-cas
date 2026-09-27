@@ -33,6 +33,18 @@ impl Monomial {
             .collect::<Result<Vec<_>, _>>()
             .map(Self::new)
     }
+
+    /// Return self / divisor when every exponent of the divisor fits.
+    pub fn quotient(&self, divisor: &Self) -> Option<Self> {
+        (0..self.0.len().max(divisor.0.len()))
+            .map(|i| self.exponent(i).checked_sub(divisor.exponent(i)))
+            .collect::<Option<Vec<_>>>()
+            .map(Self::new)
+    }
+
+    pub fn divides(&self, other: &Self) -> bool {
+        (0..self.0.len()).all(|i| self.exponent(i) <= other.exponent(i))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -76,6 +88,12 @@ pub struct Term {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Polynomial {
     terms: Vec<Term>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DivisionResult {
+    pub quotients: Vec<Polynomial>,
+    pub remainder: Polynomial,
 }
 
 impl Polynomial {
@@ -200,6 +218,48 @@ impl PolynomialRing {
             }
         }
         Ok(result)
+    }
+
+    /// Divide by ordered, nonzero divisors using the first applicable leading term.
+    /// No remainder monomial is divisible by any divisor's leading monomial.
+    pub fn divide(
+        &self,
+        dividend: &Polynomial,
+        divisors: &[Polynomial],
+    ) -> Result<DivisionResult, &'static str> {
+        if divisors.iter().any(Polynomial::is_zero) {
+            return Err("division by a zero polynomial");
+        }
+        let mut pending = dividend.clone();
+        let mut quotients = vec![Polynomial::default(); divisors.len()];
+        let mut remainder = Polynomial::default();
+        while let Some(leading) = pending.leading_term().cloned() {
+            let mut reduced = false;
+            for (index, divisor) in divisors.iter().enumerate() {
+                let divisor_leading = divisor.leading_term().expect("zero divisors were rejected");
+                if let Some(monomial) = leading.monomial.quotient(&divisor_leading.monomial) {
+                    let factor = Polynomial {
+                        terms: vec![Term {
+                            monomial,
+                            coefficient: &leading.coefficient / &divisor_leading.coefficient,
+                        }],
+                    };
+                    let multiple = self.multiply(&factor, divisor)?;
+                    quotients[index] = self.add(&quotients[index], &factor);
+                    pending = self.subtract(&pending, &multiple);
+                    reduced = true;
+                    break;
+                }
+            }
+            if !reduced {
+                remainder.terms.push(leading);
+                pending.terms.remove(0);
+            }
+        }
+        Ok(DivisionResult {
+            quotients,
+            remainder,
+        })
     }
     pub fn format(&self, value: &Polynomial) -> String {
         let mut result = String::new();

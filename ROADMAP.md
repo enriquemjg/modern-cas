@@ -72,13 +72,13 @@ The REPL can start with standard I/O and no additional dependencies.
 
 ### Division algorithm and interface
 
-- [ ] Monomial divisibility and exact quotients.
-- [ ] Division by an ordered list of polynomials.
-- [ ] Return all quotients and the remainder; reject zero divisors.
-- [ ] Verify `f = Σ(qᵢ*fᵢ) + r` and that no remainder monomial is divisible
+- [x] Monomial divisibility and exact quotients.
+- [x] Division by an ordered list of polynomials.
+- [x] Return all quotients and the remainder; reject zero divisors.
+- [x] Verify `f = Σ(qᵢ*fᵢ) + r` and that no remainder monomial is divisible
   by any divisor's leading monomial.
-- [ ] Examples showing dependence on divisor order.
-- [ ] Add function calls and `div(f, [g1, g2])`, returning `([q1, q2], r)`.
+- [x] Examples showing dependence on divisor order.
+- [x] Add function calls and `div(f, [g1, g2])`, returning `([q1, q2], r)`.
 
 ## Milestone 3 — Gröbner bases
 
