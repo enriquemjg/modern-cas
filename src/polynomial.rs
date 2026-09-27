@@ -45,6 +45,14 @@ impl Monomial {
     pub fn divides(&self, other: &Self) -> bool {
         (0..self.0.len()).all(|i| self.exponent(i) <= other.exponent(i))
     }
+
+    pub fn lcm(&self, other: &Self) -> Self {
+        Self::new(
+            (0..self.0.len().max(other.0.len()))
+                .map(|i| self.exponent(i).max(other.exponent(i)))
+                .collect(),
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -126,6 +134,23 @@ impl Polynomial {
                 .map(|t| Term {
                     monomial: t.monomial.clone(),
                     coefficient: -&t.coefficient,
+                })
+                .collect(),
+        }
+    }
+
+    /// Normalize the leading coefficient to one; zero remains zero.
+    pub fn monic(&self) -> Self {
+        let Some(leading) = self.leading_term() else {
+            return self.clone();
+        };
+        Self {
+            terms: self
+                .terms
+                .iter()
+                .map(|term| Term {
+                    monomial: term.monomial.clone(),
+                    coefficient: &term.coefficient / &leading.coefficient,
                 })
                 .collect(),
         }

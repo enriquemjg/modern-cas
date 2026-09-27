@@ -6,5 +6,6 @@ pub type Rational = num_rational::BigRational;
 pub mod parser;
 pub mod repl;
 
+pub mod groebner;
 pub mod polynomial;
 pub mod value;

@@ -32,6 +32,10 @@ pub fn run(
                 write!(output, "{HELP}")?;
                 writeln!(
                     output,
+                    "groebner([f1, f2]) returns the reduced Groebner basis as a row vector in the active order."
+                )?;
+                writeln!(
+                    output,
                     "Tuples: (), (x,), (x, y). Matrices: [x, y; z, 1]; vectors are rows or columns."
                 )?;
                 writeln!(

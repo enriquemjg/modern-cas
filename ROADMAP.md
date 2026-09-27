@@ -82,11 +82,12 @@ The REPL can start with standard I/O and no additional dependencies.
 
 ## Milestone 3 — Gröbner bases
 
-- [ ] Least common multiples of monomials and S-polynomials.
-- [ ] A direct implementation of Buchberger's algorithm.
-- [ ] Monic, minimal, and reduced bases.
-- [ ] Verify that all pairwise S-polynomials reduce to zero.
-- [ ] Compare results under all three orders using small examples.
+- [x] Least common multiples of monomials and S-polynomials.
+- [x] A direct implementation of Buchberger's algorithm.
+- [x] Monic, minimal, and reduced bases.
+- [x] Verify that all pairwise S-polynomials reduce to zero.
+- [x] Compare results under all three orders using small examples.
+- [x] Expose reduced bases as `groebner([f1, f2])`, composable with `div`.
 
 Evaluate Buchberger optimizations after establishing a correct implementation
 that is easy to follow.

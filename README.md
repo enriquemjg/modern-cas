@@ -83,7 +83,7 @@ Entries simplify automatically: `[x+x, (x+1)^2]` becomes `[2*x, x^2 + 2*x + 1]`.
 
 Arithmetic, including unary signs, currently accepts polynomials only. Collection
 arithmetic, indexing, assignments, and destructuring are future features.
-Braces are reserved for sets. Named function calls currently support only `div`.
+Braces are reserved for sets. Named function calls support `div` and `groebner`.
 
 ## Polynomial division
 
@@ -119,6 +119,37 @@ entries or type checks leave the entire session context unchanged. Parser limits
 also apply to collections. Library callers can use `parser::evaluate_value` for
 all values or `parser::evaluate` to require a polynomial transactionally.
 
+## Gröbner bases
+
+`groebner([f1, f2])` computes the reduced Gröbner basis for the active monomial
+order using direct Buchberger completion, removal of redundant leading monomials,
+and interreduction. The result is always a row vector, sorted by descending leading
+monomial, even when the input is a column vector.
+
+```text
+cas> groebner([x*y-1, y^2-x])
+[x - y^2, y^3 - 1]
+cas> div(x*y-1, groebner([x*y-1, y^2-x]))
+([y, 1], 0)
+cas> :order grevlex
+Order: grevlex. Session reset.
+cas> groebner([x*y-1, y^2-x])
+[x^2 - y, x*y - 1, y^2 - x]
+```
+
+Zero and duplicate generators are accepted. The zero ideal is represented by `[]`
+and the unit ideal by `[1]`. All output polynomials are monic, and no monomial of
+one output polynomial is divisible by another's leading monomial. For a fixed
+variable precedence and monomial order, the result is independent of generator
+order. Variable registration still follows first appearance in the session.
+
+The core exposes `PolynomialRing::s_polynomial`, `PolynomialRing::buchberger`
+(a monic basis that need not be reduced), and `PolynomialRing::groebner_basis`
+(the reduced basis). S-polynomials require nonzero operands. Exponent overflow
+is reported; failed REPL evaluations do not change the context. The implementation
+favors readability and processes all critical pairs, so large problems may be slow
+or require substantial memory.
+
 ## Core design decisions
 
 - Coefficients in ℚ backed by arbitrary-precision integers.
@@ -135,8 +166,7 @@ all values or `parser::evaluate` to require a polynomial transactionally.
   coefficients. The zero polynomial uses an empty collection.
 - Keep the algebraic core independent of the parser and I/O.
 
-See [ROADMAP.md](ROADMAP.md) for completed acceptance criteria and the next
-milestone: Gröbner bases.
+See [ROADMAP.md](ROADMAP.md) for completed milestones and future extensions.
 
 Dependency references: [num-bigint](https://docs.rs/num-bigint/),
 [num-rational](https://docs.rs/num-rational/),

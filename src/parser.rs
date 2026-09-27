@@ -132,6 +132,31 @@ impl Expr {
     fn evaluate(self, ring: &mut PolynomialRing) -> Result<Value, Error> {
         let value = match self {
             Self::Call(name, arguments, column) => {
+                if name == "groebner" {
+                    if arguments.len() != 1 {
+                        return Err(error(column, "groebner expects one polynomial vector"));
+                    }
+                    let (argument, argument_column) = arguments.into_iter().next().unwrap();
+                    let Value::Matrix(generators) = argument.evaluate(ring)? else {
+                        return Err(error(
+                            argument_column,
+                            "groebner expects a polynomial vector",
+                        ));
+                    };
+                    if generators.rows() > 1 && generators.columns() > 1 {
+                        return Err(error(
+                            argument_column,
+                            "groebner expects a row or column vector, not a matrix",
+                        ));
+                    }
+                    let basis = ring
+                        .groebner_basis(generators.entries())
+                        .map_err(|message| error(column, message))?;
+                    let columns = basis.len();
+                    return Matrix::new(usize::from(columns != 0), columns, basis)
+                        .map(Value::Matrix)
+                        .map_err(|message| error(column, message));
+                }
                 if name != "div" {
                     return Err(error(column, format!("unknown function '{name}'")));
                 }

@@ -165,3 +165,24 @@ fn division_uses_active_order_and_recovers_from_errors() {
     assert_eq!(err.matches("error:").count(), 4);
     assert!(err.contains("divisor 1 is the zero polynomial"));
 }
+
+#[test]
+fn groebner_bases_and_composed_division_through_the_binary() {
+    let (out, err) = session(
+        "groebner([x*y-1,y^2-x])\ndiv(x*y-1,groebner([x*y-1,y^2-x]))\n:order grlex\ngroebner([x*y-1;y^2-x])\n:order grevlex\ngroebner([x*y-1,y^2-x])\ngroebner([])\ngroebner([0,0])\ngroebner([x,x+1])\n",
+    );
+    assert_eq!(
+        out,
+        "[x - y^2, y^3 - 1]\n([y, 1], 0)\nOrder: grlex. Session reset.\n[x^2 - y, x*y - 1, y^2 - x]\nOrder: grevlex. Session reset.\n[x^2 - y, x*y - 1, y^2 - x]\n[]\n[]\n[1]\n"
+    );
+    assert_eq!(err, "");
+}
+
+#[test]
+fn groebner_errors_recover_without_registering_variables() {
+    let (out, err) = session(
+        "x\ngroebner(new)\ngroebner([new,1;2,3])\ngroebner([new],[])\ngroebner([new])+1\n:vars\ngroebner([x])\n",
+    );
+    assert_eq!(out, "x\nx\n[x]\n");
+    assert_eq!(err.matches("error:").count(), 4);
+}
