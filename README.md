@@ -6,10 +6,10 @@ and recognizable algorithms over premature optimization.
 
 ## Status
 
-A working REPL for exact rational expressions, with a lexer and Pratt parser
+A working REPL for multivariate polynomials over exact rationals, with a lexer and Pratt parser
 requiring no additional dependencies. Coefficients use
-`num-rational::BigRational` and `num-bigint::BigInt`. Variables and polynomials
-are not implemented yet.
+`num-rational::BigRational` and `num-bigint::BigInt`. Expressions are expanded
+and normalized automatically; polynomial division is the next milestone.
 
 ```sh
 cargo run
@@ -25,8 +25,27 @@ evaluates to `-4`. Chained powers require parentheses: `(2^3)^2`.
 We define `0^0 = 1`. Inputs are currently limited to 1024 tokens and a parser
 depth of 128.
 
-Available commands: `:help`, `:reset`, and `:quit`. There is currently no
-algebraic state to clear; `:reset` prepares the interface for the future context.
+Available commands: `:help`, `:vars`, `:reset`, `:order lex|grlex|grevlex`,
+and `:quit`. `:vars` shows variable precedence. `:reset` clears the variable
+registry and preserves the current monomial order. Changing to a different order
+clears the registry; selecting the current order preserves it. Invalid commands
+and failed expressions leave the context unchanged.
+
+Variable names match `[A-Za-z_][A-Za-z0-9_]*`. Multiplication must be explicit:
+`2*x`, not `2x`. Variables are registered on first appearance in successful
+expressions, including expressions that simplify to zero. Exponents use `u32`;
+monomial multiplication reports overflow rather than wrapping.
+
+```text
+cas> (x+y)*(x-y)
+x^2 - y^2
+cas> 1/2*x + 1/3*x
+5/6*x
+cas> (x+1)^3
+x^3 + 3*x^2 + 3*x + 1
+cas> :vars
+x > y
+```
 
 ```sh
 printf '1/2 + 1/3\n(2 + 3)*4\n' | cargo run --quiet
@@ -45,7 +64,7 @@ complete sessions.
 - An explicit session context owns variables, variable precedence, and the monomial
   order. Polynomials do not store their own order; there is no mutable global state.
 - Support lexicographic (`lex`), graded lexicographic (`grlex`), and graded reverse
-  lexicographic (`grevlex`) orders. The initial order will be `lex`.
+  lexicographic (`grevlex`) orders. The initial order is `lex`.
 - Register variables in order of appearance. Append each new variable at the end
   of the precedence without invalidating previous expressions.
 - Missing exponents are zero; monomials omit trailing zeros. The constant monomial
@@ -55,9 +74,8 @@ complete sessions.
   coefficients. The zero polynomial uses an empty collection.
 - Keep the algebraic core independent of the parser and I/O.
 
-The next release will accept expressions and produce expanded, simplified
-polynomials. See [ROADMAP.md](ROADMAP.md) for the proposed syntax and acceptance
-criteria.
+See [ROADMAP.md](ROADMAP.md) for completed acceptance criteria and the next
+milestones: multivariate division and Gröbner bases.
 
 Dependency references: [num-bigint](https://docs.rs/num-bigint/),
 [num-rational](https://docs.rs/num-rational/),

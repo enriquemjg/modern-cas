@@ -3,8 +3,9 @@
 use std::io::{self, BufRead, Write};
 
 use crate::parser;
+use crate::polynomial::{MonomialOrder, PolynomialRing};
 
-const HELP: &str = "Exact rational expressions: +, -, *, parentheses, and ^ with a nonnegative u32 integer literal.\nFractions: p/q (unsigned integers; use a leading sign). No polynomial division.\nParenthesize chained powers. 0^0 = 1. Variables are not supported yet.\nCommands: :help, :reset, :quit\n";
+const HELP: &str = "Exact polynomial expressions: +, -, *, parentheses, and ^ with a nonnegative u32 integer literal.\nFractions: p/q (unsigned integers; use a leading sign). No polynomial division.\nParenthesize chained powers. 0^0 = 1. Variables: ASCII letters or underscore, followed by letters, digits, or underscores. Use explicit multiplication.\nCommands: :help, :vars, :reset, :order lex|grlex|grevlex, :quit\n";
 
 pub fn run(
     mut input: impl BufRead,
@@ -13,6 +14,7 @@ pub fn run(
     interactive: bool,
 ) -> io::Result<()> {
     let mut line = String::new();
+    let mut ring = PolynomialRing::default();
     loop {
         if interactive {
             write!(output, "cas> ")?;
@@ -27,12 +29,43 @@ pub fn run(
             "" => continue,
             ":quit" => return Ok(()),
             ":help" => write!(output, "{HELP}")?,
-            ":reset" => writeln!(output, "Session reset.")?,
+            ":reset" => {
+                ring = PolynomialRing::new(ring.order());
+                writeln!(output, "Session reset.")?;
+            }
+            ":vars" => writeln!(
+                output,
+                "{}",
+                if ring.variables().is_empty() {
+                    "No variables.".to_owned()
+                } else {
+                    ring.variables().join(" > ")
+                }
+            )?,
+            text if text.split_whitespace().next() == Some(":order") => {
+                let parts: Vec<_> = text.split_whitespace().collect();
+                let order = match parts.as_slice() {
+                    [":order", "lex"] => Some(MonomialOrder::Lex),
+                    [":order", "grlex"] => Some(MonomialOrder::GrLex),
+                    [":order", "grevlex"] => Some(MonomialOrder::GrevLex),
+                    _ => None,
+                };
+                if let Some(order) = order {
+                    if ring.order() != order {
+                        ring = PolynomialRing::new(order);
+                        writeln!(output, "Order: {}. Session reset.", parts[1])?;
+                    } else {
+                        writeln!(output, "Order: {}.", parts[1])?;
+                    }
+                } else {
+                    writeln!(diagnostics, "error: usage: :order lex|grlex|grevlex")?;
+                }
+            }
             text if text.starts_with(':') => {
                 writeln!(diagnostics, "error: unknown command '{text}'; use :help")?
             }
-            _ => match parser::evaluate(line.trim_end()) {
-                Ok(value) => writeln!(output, "{value}")?,
+            _ => match parser::evaluate(line.trim_end(), &mut ring) {
+                Ok(value) => writeln!(output, "{}", ring.format(&value))?,
                 Err(err) => {
                     writeln!(diagnostics, "error: {err}")?;
                     writeln!(diagnostics, "{}", line.trim_end())?;

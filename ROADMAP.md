@@ -14,8 +14,8 @@
 1. **Complete:** input loop and basic commands, tested through the actual executable.
 2. **Complete:** the first rational expression end to end: input, parsing,
    exact evaluation, and output.
-3. Variables and polynomial operations, extending E2E tests with each delivery.
-4. All three orders and context commands, tested through complete sessions.
+3. **Complete:** variables and polynomial operations, extending E2E tests with each delivery.
+4. **Complete:** all three orders and context commands, tested through complete sessions.
 
 - [x] Read from `stdin` interactively or through pipes, without requiring a TTY.
 - [x] Show prompts only interactively; send results to `stdout` and errors to `stderr`.
@@ -25,26 +25,26 @@
 
 ### Core
 
-- [ ] Session context with incremental variable registration.
-- [ ] Monomials: `u32` exponents, normalization, degree, and multiplication.
-- [ ] Detect exponent overflow and compute degrees without truncation.
-- [ ] Comparators for `lex`, `grlex`, and `grevlex`, with tests distinguishing them.
-- [ ] Normalized polynomials and leading-term access (none for zero).
-- [ ] Addition, subtraction, negation, multiplication, and nonnegative integer powers.
-- [ ] Readable, deterministic formatting, omitting unit coefficients and exponents.
+- [x] Session context with incremental variable registration.
+- [x] Monomials: `u32` exponents, normalization, degree, and multiplication.
+- [x] Detect exponent overflow and compute degrees without truncation.
+- [x] Comparators for `lex`, `grlex`, and `grevlex`, with tests distinguishing them.
+- [x] Normalized polynomials and leading-term access (none for zero).
+- [x] Addition, subtraction, negation, multiplication, and nonnegative integer powers.
+- [x] Readable, deterministic formatting, omitting unit coefficients and exponents.
 
 ### Parser and interface
 
-- [ ] Small parser for integers, rational literals `p/q`, variable names,
+- [x] Small parser for integers, rational literals `p/q`, variable names,
   parentheses, `+`, `-`, `*`, and `^` with a nonnegative integer exponent.
-- [ ] Usual precedence: `-x^2` means `-(x^2)` (already verified for rationals).
-- [ ] Explicit multiplication initially (`2*x`, no implicit multiplication).
+- [x] Usual precedence: `-x^2` means `-(x^2)`.
+- [x] Explicit multiplication initially (`2*x`, no implicit multiplication).
 - [x] `/` only forms rational literals; expression division is not supported.
-- [ ] REPL with one expression per line and expanded, simplified output.
-- [ ] Commands: `:help`, `:vars`, `:reset`, `:order lex|grlex|grevlex`, `:quit`.
-- [ ] Changing the order resets the context; adding variables preserves it.
+- [x] REPL with one expression per line and expanded, simplified output.
+- [x] Commands: `:help`, `:vars`, `:reset`, `:order lex|grlex|grevlex`, `:quit`.
+- [x] Changing the order resets the context; adding variables preserves it.
 - [x] Readable errors, zero denominators rejected, and a usable session after errors.
-- [ ] Invalid input does not change the variable registry.
+- [x] Invalid input does not change the variable registry.
 - [x] EOF exits cleanly; blank lines are ignored.
 
 Assignments, persistent history, and advanced line editing are outside this milestone.
