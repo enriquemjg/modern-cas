@@ -169,6 +169,12 @@ or require substantial memory.
 
 See [ROADMAP.md](ROADMAP.md) for completed milestones and future extensions.
 
+The next phase starts with univariate and then multivariate polynomial GCD,
+followed by normalized rational functions and gradual symbolic expression support.
+Irrational and transcendental values will remain exact symbolic expressions rather
+than floating-point approximations. Gaussian rational coefficients and exact linear
+algebra are planned extensions; these capabilities are not implemented yet.
+
 Dependency references: [num-bigint](https://docs.rs/num-bigint/),
 [num-rational](https://docs.rs/num-rational/),
 [num-traits](https://docs.rs/num-traits/).

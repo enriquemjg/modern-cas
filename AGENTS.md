@@ -35,6 +35,13 @@ over premature optimization or generic algebra frameworks.
 
 ## Conventions and validation
 
+- Future expansion follows `ROADMAP.md`: polynomial GCD, normalized rational
+  functions, reusable REPL values, symbolic expressions, and Q(i) coefficients.
+  Keep irrational/transcendental values exact and symbolic; do not add implicit
+  floating-point approximations. These are planned capabilities, not current ones.
+- Preserve specialized polynomial and rational-function invariants separately from
+  general symbolic expressions. Branch-sensitive rewrites require assumptions.
+
 - Write all repository content in English, including documentation, code comments,
   Rust documentation comments, user-facing messages, and package metadata.
 - See `README.md` for project decisions and `ROADMAP.md` for milestone details.
