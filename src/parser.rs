@@ -3,10 +3,10 @@
 use std::fmt;
 
 use num_bigint::BigInt;
-use num_traits::{One, Zero};
 
 use crate::Rational;
 use crate::polynomial::{Polynomial, PolynomialRing};
+use crate::rational_function::RationalFunction;
 use crate::value::{Matrix, Value};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -117,14 +117,33 @@ enum Expr {
     Tuple(Vec<Expr>),
     Matrix(Vec<Vec<(Expr, usize)>>),
     Binary(Kind, Box<Expr>, Box<Expr>, usize),
-    Power(Box<Expr>, u32, usize),
+    Power(Box<Expr>, u32, bool, usize),
 }
 
 fn polynomial(value: Value, column: usize) -> Result<Polynomial, Error> {
     match value {
         Value::Polynomial(value) => Ok(value),
+        Value::RationalFunction(_) => Err(error(
+            column,
+            "expected a polynomial, found a rational function",
+        )),
         Value::Tuple(_) => Err(error(column, "expected a polynomial, found a tuple")),
         Value::Matrix(_) => Err(error(column, "expected a polynomial, found a matrix")),
+    }
+}
+
+fn scalar(value: Value, column: usize) -> Result<RationalFunction, Error> {
+    match value {
+        Value::Polynomial(value) => Ok(RationalFunction::from_polynomial(value)),
+        Value::RationalFunction(value) => Ok(value),
+        Value::Matrix(_) => Err(error(
+            column,
+            "expected a polynomial or rational function, found a matrix",
+        )),
+        Value::Tuple(_) => Err(error(
+            column,
+            "expected a polynomial or rational function, found a tuple",
+        )),
     }
 }
 
@@ -235,25 +254,32 @@ impl Expr {
             Self::Number(value) => Polynomial::constant(value),
             Self::Variable(name) => ring.variable(&name),
             Self::Unary(negative, expression, column) => {
-                let value = polynomial(expression.evaluate(ring)?, column)?;
-                if negative { value.negate() } else { value }
+                let value = scalar(expression.evaluate(ring)?, column)?;
+                return Ok(Value::from_rational_function(if negative {
+                    value.negate()
+                } else {
+                    value
+                }));
             }
             Self::Binary(op, left, right, column) => {
-                let left = polynomial(left.evaluate(ring)?, column)?;
-                let right = polynomial(right.evaluate(ring)?, column)?;
-                match op {
-                    Kind::Plus => ring.add(&left, &right),
-                    Kind::Minus => ring.subtract(&left, &right),
-                    Kind::Star => ring
-                        .multiply(&left, &right)
-                        .map_err(|message| error(column, message))?,
+                let left = scalar(left.evaluate(ring)?, column)?;
+                let right = scalar(right.evaluate(ring)?, column)?;
+                let result = match op {
+                    Kind::Plus => left.add(&right, ring),
+                    Kind::Minus => left.subtract(&right, ring),
+                    Kind::Star => left.multiply(&right, ring),
+                    Kind::Slash => left.divide(&right, ring),
                     _ => unreachable!("only arithmetic operators produce binary nodes"),
                 }
+                .map_err(|message| error(column, message))?;
+                return Ok(Value::from_rational_function(result));
             }
-            Self::Power(base, exponent, column) => {
-                let base = polynomial(base.evaluate(ring)?, column)?;
-                ring.power(&base, exponent)
-                    .map_err(|message| error(column, message))?
+            Self::Power(base, exponent, negative, column) => {
+                let base = scalar(base.evaluate(ring)?, column)?;
+                return base
+                    .power(exponent, negative, ring)
+                    .map(Value::from_rational_function)
+                    .map_err(|message| error(column, message));
             }
         };
         Ok(Value::Polynomial(value))
@@ -324,18 +350,7 @@ impl Parser {
         let mut left = match self.current().kind.clone() {
             Kind::Integer(_) => {
                 let numerator = self.integer()?;
-                let denominator = if self.current().kind == Kind::Slash {
-                    self.next += 1;
-                    let column = self.current().column;
-                    let denominator = self.integer()?;
-                    if denominator.is_zero() {
-                        return Err(error(column, "denominator cannot be zero"));
-                    }
-                    denominator
-                } else {
-                    BigInt::one()
-                };
-                Expr::Number(Rational::new(numerator, denominator))
+                Expr::Number(Rational::from_integer(numerator))
             }
             Kind::Identifier(name) => {
                 let column = self.current().column;
@@ -406,7 +421,7 @@ impl Parser {
             let op = self.current().kind.clone();
             let binding = match op {
                 Kind::Plus | Kind::Minus => 1,
-                Kind::Star => 2,
+                Kind::Star | Kind::Slash => 2,
                 Kind::Caret => 4,
                 _ => break,
             };
@@ -416,12 +431,16 @@ impl Parser {
             let operator_column = self.current().column;
             self.next += 1;
             if op == Kind::Caret {
+                let negative = self.current().kind == Kind::Minus;
+                if negative || self.current().kind == Kind::Plus {
+                    self.next += 1;
+                }
                 let column = self.current().column;
                 let exponent = self
                     .integer()?
                     .try_into()
                     .map_err(|_| error(column, "exponent must fit in u32"))?;
-                left = Expr::Power(Box::new(left), exponent, operator_column);
+                left = Expr::Power(Box::new(left), exponent, negative, operator_column);
                 if self.current().kind == Kind::Caret {
                     return Err(self
                         .fail("parenthesize chained powers; exponents must be integer literals"));
@@ -442,9 +461,7 @@ fn parse(input: &str) -> Result<Expr, Error> {
     };
     let expression = parser.expression(0, 0)?;
     if parser.current().kind != Kind::End {
-        return Err(
-            parser.fail("unexpected token; use explicit '*' and '/' only in rational literals")
-        );
+        return Err(parser.fail("unexpected token; use explicit '*' for multiplication"));
     }
     Ok(expression)
 }

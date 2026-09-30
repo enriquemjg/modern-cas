@@ -37,10 +37,10 @@ fn exact_arithmetic_and_precedence_through_the_binary() {
 #[test]
 fn errors_do_not_end_the_session() {
     let (out, err) =
-        session("1/0\n(1+2\n2*(3+)\n2/3/4\n2^-1\n2^4294967296\n2^3^2\n@\n2 3\n:nope\n1+1\n");
+        session("1/0\n(1+2\n2*(3+)\n2/0/4\n0^-1\n2^4294967296\n2^3^2\n@\n2 3\n:nope\n1+1\n");
     assert_eq!(out, "2\n");
     assert_eq!(err.matches("error:").count(), 10);
-    assert!(err.contains("column 3: denominator cannot be zero\n1/0\n  ^"));
+    assert!(err.contains("column 2: denominator cannot be zero\n1/0\n ^"));
     assert!(err.contains("expected ')'"));
     assert!(err.contains("exponent must fit in u32"));
 }
@@ -111,7 +111,7 @@ fn all_orders_and_session_lifecycle() {
 #[test]
 fn failed_expressions_and_commands_preserve_variables() {
     let (out, err) = session(
-        "x\nbad+\nnew^4294967295*new\n:order invalid\n:vars\ny\n:vars\n(x+y)/(x-y)\n2x\nx^4294967295\nx-x\n",
+        "x\nbad+\nnew^4294967295*new\n:order invalid\n:vars\ny\n:vars\n(x+y)/(x-x)\n2x\nx^4294967295\nx-x\n",
     );
     assert_eq!(out, "x\nx\ny\nx > y\nx^4294967295\n0\n");
     assert_eq!(err.matches("error:").count(), 5);
@@ -210,4 +210,16 @@ fn multivariate_gcd_repl_and_order_changes() {
         "x + y\ny\n1\nOrder: grevlex. Session reset.\ny^2 + x\nx > y\nx + y\n"
     );
     assert_eq!(err.matches("error:").count(), 1);
+}
+
+#[test]
+fn rational_functions_normalize_and_recover_in_the_repl() {
+    let (out, err) = session(
+        "(x^2-1)/(x-1)\n1/x+1/y\n(x/y)^-2\n2/3/4\n1/2^2\n1/(x-x)\nnew/(z-z)\n:vars\n(1/x,x/x)\ngcd((x^2-1)/(x-1),x+1)\n",
+    );
+    assert_eq!(
+        out,
+        "x + 1\n(x + y)/(x*y)\n(y^2)/(x^2)\n1/6\n1/4\nx > y\n((1)/(x), 1)\nx + 1\n"
+    );
+    assert_eq!(err.matches("error:").count(), 2);
 }

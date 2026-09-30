@@ -27,6 +27,11 @@ over premature optimization or generic algebra frameworks.
   matrices. `(x)` groups; `(x,)` is a singleton tuple; braces are reserved for sets.
 - Collection literals do not imply collection arithmetic. Commit new variables only
   after the entire expression and its required result type have been validated.
+- Scalar arithmetic includes normalized rational functions: cancel polynomial GCDs,
+  make denominators monic, and demote denominator-one results to polynomials.
+  `/` is ordinary left-associative division at multiplication precedence; powers
+  accept signed integer literals. Equality is fraction-field equality, without
+  retaining excluded input points. Matrices still require polynomial entries.
 - `div(f, [g1, g2])` returns `([q1, q2], r)`. Accept row/column divisor vectors
   and preserve their shape; reject zero divisors. Empty divisors return `([], f)`.
 - `groebner([f1, f2])` uses the active order and returns a reduced monic basis as
@@ -39,8 +44,8 @@ over premature optimization or generic algebra frameworks.
   Use Euclid for univariate inputs and recursive primitive pseudo-remainder
   sequences for multivariate inputs.
 
-- Future expansion follows `ROADMAP.md`: normalized rational
-  functions, reusable REPL values, symbolic expressions, and Q(i) coefficients.
+- Future expansion follows `ROADMAP.md`: reusable REPL values, symbolic
+  expressions, and Q(i) coefficients.
   Keep irrational/transcendental values exact and symbolic; do not add implicit
   floating-point approximations. These are planned capabilities, not current ones.
 - Preserve specialized polynomial and rational-function invariants separately from

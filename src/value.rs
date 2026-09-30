@@ -1,10 +1,12 @@
 //! Interpreter values and rectangular polynomial matrices.
 
 use crate::polynomial::{Polynomial, PolynomialRing};
+use crate::rational_function::RationalFunction;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     Polynomial(Polynomial),
+    RationalFunction(RationalFunction),
     Tuple(Vec<Value>),
     Matrix(Matrix),
 }
@@ -45,9 +47,17 @@ impl Matrix {
 }
 
 impl Value {
+    pub fn from_rational_function(value: RationalFunction) -> Self {
+        if value.is_polynomial() {
+            Self::Polynomial(value.numerator().clone())
+        } else {
+            Self::RationalFunction(value)
+        }
+    }
     pub fn format(&self, ring: &PolynomialRing) -> String {
         match self {
             Self::Polynomial(value) => ring.format(value),
+            Self::RationalFunction(value) => value.format(ring),
             Self::Tuple(values) => {
                 let mut body = values
                     .iter()

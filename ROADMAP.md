@@ -134,16 +134,16 @@ algorithm. Full polynomial factorization is not required for this milestone.
 
 Depends on multivariate GCD and exact polynomial quotient.
 
-- [ ] Represent a rational function as polynomial numerator and nonzero denominator.
-- [ ] Cancel their polynomial GCD, make the denominator monic, normalize zero,
+- [x] Represent a rational function as polynomial numerator and nonzero denominator.
+- [x] Cancel their polynomial GCD, make the denominator monic, normalize zero,
   and return a polynomial when the normalized denominator is 1.
-- [ ] Implement exact addition, subtraction, multiplication, division, equality,
+- [x] Implement exact addition, subtraction, multiplication, division, equality,
   and integer powers, including negative powers of nonzero values.
-- [ ] Extend `/` to general expression division. Preserve exact rational numeric
+- [x] Extend `/` to general expression division. Preserve exact rational numeric
   input and existing arithmetic precedence; document how this extends literals.
-- [ ] Define equality in the fraction field: cancellation does not retain excluded
+- [x] Define equality in the fraction field: cancellation does not retain excluded
   points of the original expression. Pointwise domains require separate metadata.
-- [ ] Verify `(x^2-1)/(x-1) = x+1`, `1/x + 1/y = (x+y)/(x*y)`, zero denominators,
+- [x] Verify `(x^2-1)/(x-1) = x+1`, `1/x + 1/y = (x+y)/(x*y)`, zero denominators,
   arithmetic identities, and format/parse round trips.
 
 ## Milestone 6 — Reusable REPL values

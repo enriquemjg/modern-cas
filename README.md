@@ -19,9 +19,10 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 ```
 
-The REPL accepts `+`, `-`, `*`, unary signs, parentheses, and powers with
-nonnegative integer literal exponents that fit in `u32`. `/` is only allowed
-in rational literals such as `1/2`; it does not divide expressions. `-2^2`
+The REPL accepts `+`, `-`, `*`, `/`, unary signs, parentheses, and powers with
+optionally signed integer literal exponents whose magnitude fits in `u32`.
+Division and multiplication have equal precedence and associate left to right.
+Powers bind more tightly: `1/2^2` means `1/(2^2)`, and `-2^2`
 evaluates to `-4`. Chained powers require parentheses: `(2^3)^2`.
 We define `0^0 = 1`. Inputs are currently limited to 1024 tokens and a parser
 depth of 128.
@@ -61,7 +62,7 @@ complete sessions.
 
 ## Compound values
 
-Every expression returns one value: a polynomial, tuple, or polynomial matrix.
+Every expression returns one value: a polynomial, rational function, tuple, or polynomial matrix.
 
 | Syntax         | Meaning                                    |
 | -------------- | ------------------------------------------ |
@@ -82,7 +83,7 @@ semicolons separate rows; rows must have equal lengths. Spaces are not separator
 and empty rows, trailing separators, and block concatenation are not supported.
 Entries simplify automatically: `[x+x, (x+1)^2]` becomes `[2*x, x^2 + 2*x + 1]`.
 
-Arithmetic, including unary signs, currently accepts polynomials only. Collection
+Arithmetic, including unary signs, accepts polynomials and rational functions. Collection
 arithmetic, indexing, assignments, and destructuring are future features.
 Braces are reserved for sets. Named function calls support `div`, `groebner`, and `gcd`.
 
@@ -110,7 +111,8 @@ All failures leave the session unchanged.
 Calls take comma-separated arguments without a trailing comma. Their results can
 appear inside tuples, but polynomial operators do not accept the tuple returned by
 `div`. A bare name such as `div` remains a polynomial variable; only `div(...)`
-is a call. `/` remains restricted to rational literals.
+is a call. `/` computes an exact fraction-field quotient; `div` returns polynomial
+quotients and a remainder.
 
 The core API is `PolynomialRing::divide(&dividend, &divisors)`, returning a
 `DivisionResult` with `quotients` and `remainder`, independently of REPL values.
@@ -119,6 +121,38 @@ Elements are evaluated left to right, with matrices traversed by rows. Failed
 entries or type checks leave the entire session context unchanged. Parser limits
 also apply to collections. Library callers can use `parser::evaluate_value` for
 all values or `parser::evaluate` to require a polynomial transactionally.
+
+## Rational functions
+
+Quotients of polynomials are normalized by cancelling their multivariate GCD and
+making the denominator monic. A denominator of 1 produces a polynomial value;
+zero is always the polynomial zero. All coefficients remain exact rationals.
+
+```text
+cas> (x^2-1)/(x-1)
+x + 1
+cas> 1/x + 1/y
+(x + y)/(x*y)
+cas> (x/y)^-2
+(y^2)/(x^2)
+```
+
+Equality is equality in the fraction field within the same ring context; cancelled
+factors do not retain excluded input points. Thus `x/x` becomes 1. Division by the
+zero polynomial and negative powers of zero are errors. `0^0` remains 1.
+The library's normalized `RationalFunction` type supports exact arithmetic and
+equality; no equality operator is exposed in the REPL yet.
+
+`/` now works as a regular operator: `2/3/4` is `1/6`, `1/2^2` is `1/4`, and
+`(1/2)^2` is also `1/4`. Previously the parser treated numeric fractions as atomic
+literals, so this changes the meaning of inputs such as `2/3^2` to `2/(3^2)`.
+Use parentheses to raise an entire fraction to a power. Signed exponent literals
+such as `x^-2` are accepted; general exponent expressions remain unsupported.
+
+Tuples can contain rational functions. Matrices and polynomial algorithms still
+require polynomial values, including rational expressions that simplify to
+polynomials. For example, `gcd((x^2-1)/(x-1), x+1)` works, while `gcd(1/x, x)`
+reports a type error. Failed expressions preserve the session.
 
 ## Polynomial GCD
 
@@ -195,8 +229,8 @@ or require substantial memory.
 
 See [ROADMAP.md](ROADMAP.md) for completed milestones and future extensions.
 
-Multivariate polynomial GCD is implemented. The next phase adds normalized
-rational functions, followed by gradual symbolic expression support.
+Multivariate polynomial GCD and normalized rational functions are implemented.
+The next phase adds reusable REPL values, followed by symbolic expression support.
 Irrational and transcendental values will remain exact symbolic expressions rather
 than floating-point approximations. Gaussian rational coefficients and exact linear
 algebra are planned extensions; these capabilities are not implemented yet.

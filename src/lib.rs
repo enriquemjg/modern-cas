@@ -9,4 +9,5 @@ pub mod repl;
 pub mod gcd;
 pub mod groebner;
 pub mod polynomial;
+pub mod rational_function;
 pub mod value;

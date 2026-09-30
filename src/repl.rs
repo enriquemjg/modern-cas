@@ -5,7 +5,7 @@ use std::io::{self, BufRead, Write};
 use crate::parser;
 use crate::polynomial::{MonomialOrder, PolynomialRing};
 
-const HELP: &str = "Exact polynomial expressions: +, -, *, parentheses, and ^ with a nonnegative u32 integer literal.\nFractions: p/q (unsigned integers; use a leading sign). Polynomial division: div(f, [g1, g2]) returns ([q1, q2], r).\nParenthesize chained powers. 0^0 = 1. Variables: ASCII letters or underscore, followed by letters, digits, or underscores. Use explicit multiplication.\nCommands: :help, :vars, :reset, :order lex|grlex|grevlex, :quit\n";
+const HELP: &str = "Exact polynomial expressions: +, -, *, /, parentheses, and ^ with a signed integer literal of u32 magnitude.\nExact expression division: /. Powers bind before division. Polynomial division: div(f, [g1, g2]) returns ([q1, q2], r).\nParenthesize chained powers. 0^0 = 1. Variables: ASCII letters or underscore, followed by letters, digits, or underscores. Use explicit multiplication.\nCommands: :help, :vars, :reset, :order lex|grlex|grevlex, :quit\n";
 
 pub fn run(
     mut input: impl BufRead,
@@ -44,7 +44,7 @@ pub fn run(
                 )?;
                 writeln!(
                     output,
-                    "Arithmetic accepts polynomials only. Braces are reserved for future sets."
+                    "Arithmetic accepts polynomials and rational functions. Braces are reserved for future sets."
                 )?;
             }
             ":reset" => {
