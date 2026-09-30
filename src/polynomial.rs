@@ -299,32 +299,6 @@ impl PolynomialRing {
         Ok(result.quotients.into_iter().next().unwrap())
     }
 
-    /// Euclidean GCD over Q in at most one variable shared by both operands.
-    /// Return a monic polynomial, with gcd(0, 0) = 0.
-    pub fn gcd(&self, a: &Polynomial, b: &Polynomial) -> Result<Polynomial, &'static str> {
-        let mut variable = None;
-        for term in a.terms().iter().chain(b.terms()) {
-            for (index, &exponent) in term.monomial.exponents().iter().enumerate() {
-                if exponent == 0 {
-                    continue;
-                }
-                if variable.is_some_and(|previous| previous != index) {
-                    return Err(
-                        "gcd currently supports at most one variable across both polynomials",
-                    );
-                }
-                variable = Some(index);
-            }
-        }
-        let (mut a, mut b) = (a.monic(), b.monic());
-        while !b.is_zero() {
-            let remainder = self.divide(&a, std::slice::from_ref(&b))?.remainder.monic();
-            a = b;
-            b = remainder;
-        }
-        Ok(a)
-    }
-
     pub fn format(&self, value: &Polynomial) -> String {
         let mut result = String::new();
         for term in &value.terms {

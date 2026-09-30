@@ -53,16 +53,47 @@ fn exact_quotient_accepts_multivariate_inputs_and_rejects_remainders() {
 #[test]
 fn invalid_gcd_calls_preserve_the_session() {
     let mut ring = PolynomialRing::default();
-    for input in [
-        "gcd(x,y)",
-        "gcd(x+y,0)",
-        "gcd(x+y,1)",
-        "gcd([new],1)",
-        "gcd(new,(1,))",
-        "gcd(new)",
-        "gcd(new,1,2)",
-    ] {
+    for input in ["gcd([new],1)", "gcd(new,(1,))", "gcd(new)", "gcd(new,1,2)"] {
         assert!(evaluate(input, &mut ring).is_err(), "{input}");
         assert!(ring.variables().is_empty());
+    }
+}
+
+#[test]
+fn multivariate_gcd_matches_known_factors_under_all_orders() {
+    for order in [
+        MonomialOrder::Lex,
+        MonomialOrder::GrLex,
+        MonomialOrder::GrevLex,
+    ] {
+        let mut ring = PolynomialRing::new(order);
+        evaluate("x+y+z+w", &mut ring).unwrap();
+        for (a, b, expected) in [
+            ("(x+y)*(x+1)", "(x+y)*(y+1)", "x+y"),
+            ("y*(x+1)", "y^2*(x+2)", "y"),
+            ("(y+z)*(x+y)", "(y+z)*(x+z)", "y+z"),
+            ("(x+y)^3*(z+1)", "(x+y)^2*(z+2)", "(x+y)^2"),
+            ("2/3*(x+y)*(y*x+1)", "-5/7*(x+y)*(y*x+2)", "x+y"),
+            ("x", "y", "1"),
+            ("x+y", "0", "x+y"),
+            ("x+y", "2", "1"),
+            ("x*y", "x*z", "x"),
+            ("(z+w)*(z+1)", "(z+w)*(w+1)", "z+w"),
+            ("(x*y+z)*(x*z+y)", "(x*y+z)*(y*z+x)", "x*y+z"),
+        ] {
+            let a = evaluate(a, &mut ring).unwrap();
+            let b = evaluate(b, &mut ring).unwrap();
+            let expected = evaluate(expected, &mut ring).unwrap().monic();
+            let gcd = ring.gcd(&a, &b).unwrap();
+            assert_eq!(gcd, expected);
+            assert_eq!(ring.gcd(&b, &a).unwrap(), gcd);
+            for f in [&a, &b] {
+                let q = ring.exact_quotient(f, &gcd).unwrap();
+                assert_eq!(ring.multiply(&q, &gcd).unwrap(), *f);
+            }
+            let qa = ring.exact_quotient(&a, &gcd).unwrap();
+            let qb = ring.exact_quotient(&b, &gcd).unwrap();
+            assert_eq!(ring.format(&ring.gcd(&qa, &qb).unwrap()), "1");
+        }
     }
 }

@@ -35,11 +35,11 @@ over premature optimization or generic algebra frameworks.
 
 ## Conventions and validation
 
-- `gcd(f, g)` currently supports at most one variable across both normalized
-  operands and returns a monic polynomial, with `gcd(0, 0) = 0`. Multivariate
-  GCD is the next algebraic extension; unrelated session variables are allowed.
+- `gcd(f, g)` computes a monic multivariate GCD, with `gcd(0, 0) = 0`.
+  Use Euclid for univariate inputs and recursive primitive pseudo-remainder
+  sequences for multivariate inputs.
 
-- Future expansion follows `ROADMAP.md`: multivariate polynomial GCD, normalized rational
+- Future expansion follows `ROADMAP.md`: normalized rational
   functions, reusable REPL values, symbolic expressions, and Q(i) coefficients.
   Keep irrational/transcendental values exact and symbolic; do not add implicit
   floating-point approximations. These are planned capabilities, not current ones.

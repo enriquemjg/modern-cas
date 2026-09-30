@@ -194,8 +194,20 @@ fn univariate_gcd_is_exact_and_composable() {
     );
     assert_eq!(
         out,
-        "x^2 - 1\n0\nx - 2\n1\n1\n([x], 0)\nx\nx\nOrder: grevlex. Session reset.\nz - 1\n"
+        "x^2 - 1\n0\nx - 2\n1\n1\n([x], 0)\n1\nx > y\nx\nOrder: grevlex. Session reset.\nz - 1\n"
     );
-    assert_eq!(err.matches("error:").count(), 2);
-    assert!(err.contains("at most one variable"));
+    assert_eq!(err.matches("error:").count(), 1);
+    assert!(err.contains("expected a polynomial"));
+}
+
+#[test]
+fn multivariate_gcd_repl_and_order_changes() {
+    let (out, err) = session(
+        "gcd((x+y)*(x+1),(x+y)*(y+1))\ngcd(y*(x+1),y^2*(x+2))\ngcd(x,y)\n:order grevlex\ngcd((x+y^2)*(x+1),(x+y^2)*(y+1))\ngcd([new],1)\n:vars\ngcd(x+y,0)\n",
+    );
+    assert_eq!(
+        out,
+        "x + y\ny\n1\nOrder: grevlex. Session reset.\ny^2 + x\nx > y\nx + y\n"
+    );
+    assert_eq!(err.matches("error:").count(), 1);
 }

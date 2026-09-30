@@ -118,13 +118,13 @@ abstraction when an operation needs it. Tuples and matrices remain containers.
 
 ### 4b: Multivariate extension
 
-- [ ] Recursive coefficient decomposition in a chosen variable, coefficient
+- [x] Recursive coefficient decomposition in a chosen variable, coefficient
   content, and primitive parts.
-- [ ] Primitive polynomial remainder sequences with pseudo-division over the
+- [x] Primitive polynomial remainder sequences with pseudo-division over the
   remaining polynomial coefficient ring; recursively compute coefficient GCDs.
-- [ ] Extend `gcd` to multivariate polynomials, with monic normalization in the
+- [x] Extend `gcd` to multivariate polynomials, with monic normalization in the
   active order and no dependency on a rational-function type.
-- [ ] Verify shared factors such as `gcd((x+y)*(x+1), (x+y)*(y+1)) = x+y`,
+- [x] Verify shared factors such as `gcd((x+y)*(x+1), (x+y)*(y+1)) = x+y`,
   content factors, zero inputs, and equivalent results up to units across orders.
 
 Multivariate division with remainder alone is not a multivariate Euclidean GCD

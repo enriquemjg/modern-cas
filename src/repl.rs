@@ -32,7 +32,7 @@ pub fn run(
                 write!(output, "{HELP}")?;
                 writeln!(
                     output,
-                    "gcd(f, g) returns the monic GCD over rationals; operands may involve at most one variable in total."
+                    "gcd(f, g) returns the monic multivariate GCD over rationals."
                 )?;
                 writeln!(
                     output,
