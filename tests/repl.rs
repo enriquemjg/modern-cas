@@ -186,3 +186,16 @@ fn groebner_errors_recover_without_registering_variables() {
     assert_eq!(out, "x\nx\n[x]\n");
     assert_eq!(err.matches("error:").count(), 4);
 }
+
+#[test]
+fn univariate_gcd_is_exact_and_composable() {
+    let (out, err) = session(
+        "gcd(x^3-x,x^2-1)\ngcd(0,0)\ngcd(0,-2*x+4)\ngcd(2/3,4/5)\ngcd(x^2+1,x+1)\ndiv(x^3-x,[gcd(x^3-x,x^2-1)])\ngcd(x,y)\ngcd([new],1)\n:vars\ngcd(y-y+x,x^2)\n:order grevlex\ngcd(z^2-1,z-1)\n",
+    );
+    assert_eq!(
+        out,
+        "x^2 - 1\n0\nx - 2\n1\n1\n([x], 0)\nx\nx\nOrder: grevlex. Session reset.\nz - 1\n"
+    );
+    assert_eq!(err.matches("error:").count(), 2);
+    assert!(err.contains("at most one variable"));
+}

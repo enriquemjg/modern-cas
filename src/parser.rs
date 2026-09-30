@@ -132,6 +132,20 @@ impl Expr {
     fn evaluate(self, ring: &mut PolynomialRing) -> Result<Value, Error> {
         let value = match self {
             Self::Call(name, arguments, column) => {
+                if name == "gcd" {
+                    if arguments.len() != 2 {
+                        return Err(error(column, "gcd expects two polynomials"));
+                    }
+                    let mut arguments = arguments.into_iter();
+                    let (left, left_column) = arguments.next().unwrap();
+                    let left = polynomial(left.evaluate(ring)?, left_column)?;
+                    let (right, right_column) = arguments.next().unwrap();
+                    let right = polynomial(right.evaluate(ring)?, right_column)?;
+                    return ring
+                        .gcd(&left, &right)
+                        .map(Value::Polynomial)
+                        .map_err(|message| error(column, message));
+                }
                 if name == "groebner" {
                     if arguments.len() != 1 {
                         return Err(error(column, "groebner expects one polynomial vector"));

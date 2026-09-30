@@ -108,12 +108,12 @@ abstraction when an operation needs it. Tuples and matrices remain containers.
 
 ### 4a: Univariate foundation
 
-- [ ] Exact polynomial quotient helper that rejects a nonzero remainder.
-- [ ] Euclidean GCD over rational coefficients for polynomials involving at most
+- [x] Exact polynomial quotient helper that rejects a nonzero remainder.
+- [x] Euclidean GCD over rational coefficients for polynomials involving at most
   one common variable; reject multivariate inputs until 4b is implemented.
-- [ ] Expose `gcd(f, g)` in the REPL and return a monic result.
-- [ ] Define `gcd(0, 0) = 0`, `gcd(f, 0) = monic(f)`, and nonzero constant GCDs as 1.
-- [ ] Verify common-factor examples, coprime inputs, rational coefficients,
+- [x] Expose `gcd(f, g)` in the REPL and return a monic result.
+- [x] Define `gcd(0, 0) = 0`, `gcd(f, 0) = monic(f)`, and nonzero constant GCDs as 1.
+- [x] Verify common-factor examples, coprime inputs, rational coefficients,
   symmetry, and divisibility of both operands.
 
 ### 4b: Multivariate extension

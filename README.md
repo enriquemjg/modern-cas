@@ -84,7 +84,7 @@ Entries simplify automatically: `[x+x, (x+1)^2]` becomes `[2*x, x^2 + 2*x + 1]`.
 
 Arithmetic, including unary signs, currently accepts polynomials only. Collection
 arithmetic, indexing, assignments, and destructuring are future features.
-Braces are reserved for sets. Named function calls support `div` and `groebner`.
+Braces are reserved for sets. Named function calls support `div`, `groebner`, and `gcd`.
 
 ## Polynomial division
 
@@ -119,6 +119,27 @@ Elements are evaluated left to right, with matrices traversed by rows. Failed
 entries or type checks leave the entire session context unchanged. Parser limits
 also apply to collections. Library callers can use `parser::evaluate_value` for
 all values or `parser::evaluate` to require a polynomial transactionally.
+
+## Polynomial GCD
+
+`gcd(f, g)` computes a monic univariate GCD over rational coefficients using
+Euclid's algorithm. Both normalized operands together may involve at most one
+variable; other variables registered in the session do not affect the operation.
+Multivariate inputs, including `gcd(x, y)`, are rejected in this first version.
+
+```text
+cas> gcd(x^3-x, x^2-1)
+x^2 - 1
+cas> gcd(1/2*x^2-1/2, -3/4*x+3/4)
+x - 1
+```
+
+`gcd(0, 0)` is zero, `gcd(f, 0)` is the monic form of `f`, and the GCD of
+nonzero constants is 1. Results can be used directly in polynomial expressions
+and calls to `div`. Type, arity, or variable-domain errors preserve the session.
+The library exposes `PolynomialRing::gcd` and `PolynomialRing::exact_quotient`;
+the latter also accepts multivariate polynomials and rejects zero divisors or
+division with a nonzero remainder.
 
 ## Gröbner bases
 
@@ -169,7 +190,7 @@ or require substantial memory.
 
 See [ROADMAP.md](ROADMAP.md) for completed milestones and future extensions.
 
-The next phase starts with univariate and then multivariate polynomial GCD,
+Univariate polynomial GCD is implemented. The next phase extends it to multivariate inputs,
 followed by normalized rational functions and gradual symbolic expression support.
 Irrational and transcendental values will remain exact symbolic expressions rather
 than floating-point approximations. Gaussian rational coefficients and exact linear

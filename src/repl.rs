@@ -32,6 +32,10 @@ pub fn run(
                 write!(output, "{HELP}")?;
                 writeln!(
                     output,
+                    "gcd(f, g) returns the monic GCD over rationals; operands may involve at most one variable in total."
+                )?;
+                writeln!(
+                    output,
                     "groebner([f1, f2]) returns the reduced Groebner basis as a row vector in the active order."
                 )?;
                 writeln!(
